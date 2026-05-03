@@ -187,8 +187,9 @@
   (loop until (equal *choice* "999")
   do (switchboard)))
 
-;(main)
+(main)
 
-(sb-ext:save-lisp-and-die "management-console"
-  :toplevel #'main
-  :executable t)
+; UNCOMMENT AND COMMENT MAIN THEM --LOAD TO COMPILE TO BINARY
+;(sb-ext:save-lisp-and-die "management-console"
+;  :toplevel #'main
+;  :executable t)
