@@ -20,6 +20,7 @@
   (format t "~%7 - Backup Twenty - BROKEN")
   (format t "~%8 - Logs")
   (format t "~%9 - Install Docker")
+  (format t "~%9 - Restart All Containers")
   (format t "~%99 - Help")
   (format t "~%999 - Exit"))
 
@@ -94,8 +95,8 @@
   (format t "NOT IMPLEMENTED"))
 
 (defun restart-activepieces ()
-  (uiop:run-program (list "sudo" "docker" "stop" "activepieces") :output t)
-  (uiop:run-program (list "sudo" "docker" "start" "activepieces") :output t)
+  (uiop:run-program (list "sudo" "docker" "stop" "activepieces-app") :output t)
+  (uiop:run-program (list "sudo" "docker" "start" "activepieces-app") :output t)
   (format t "~%RESTARTED"))
 
 (defun restart-twenty ()
@@ -122,8 +123,8 @@
   
 
 (defun update-activepieces ()
-  (uiop:run-program (list "sudo" "docker" "stop" "activepieces") :output t)
-  (uiop:run-program (list "sudo" "docker" "rm" "activepieces") :output t)
+  (uiop:run-program (list "sudo" "docker" "stop" "activepieces-app") :output t)
+  (uiop:run-program (list "sudo" "docker" "rm" "activepieces-app") :output t)
   (uiop:run-program (list "sudo" "docker" "pull" "activepieces/activepieces:latest") :output t)
   (install-activepieces)
   (format t "~%COMPLETED. Check output above."))
@@ -162,6 +163,12 @@
     (list "sudo" "docker" "logs" "--tail" "10" "twenty-server-1")
     :output :string)))
 
+(defun restart-all ()
+  (uiop:run-program
+    (list "sh" "-c" "sudo docker restart $(sudo docker ps -q)")
+    :output t
+    :error-output t))
+    
 (defun switchboard ()
   (format t "~%Enter 0 to install containers or 99 for help.")
   (format t "~%>> ")
@@ -178,6 +185,7 @@
     ((equal *choice* "7") (backup-twenty))
     ((equal *choice* "8") (log-check))
     ((equal *choice* "9") (install-docker))
+    ((equal *choice* "10") (restart-all))
     ((equal *choice* "99") (help))
     ((equal *choice* "999") (sb-ext:exit))
     (t (format t "~%Invalid option."))))
@@ -187,9 +195,9 @@
   (loop until (equal *choice* "999")
   do (switchboard)))
 
-(main)
+;(main)
 
 ; UNCOMMENT AND COMMENT MAIN THEM --LOAD TO COMPILE TO BINARY
-;(sb-ext:save-lisp-and-die "management-console"
-;  :toplevel #'main
-;  :executable t)
+(sb-ext:save-lisp-and-die "management-console"
+  :toplevel #'main
+  :executable t)
