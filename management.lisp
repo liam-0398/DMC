@@ -21,6 +21,7 @@
   (format t "~%8 - Logs")
   (format t "~%9 - Install Docker")
   (format t "~%10 - Restart All Containers")
+  (format t "~%11 - Install Twenty (WITHOUT AP)")
   (format t "~%99 - Help")
   (format t "~%999 - Exit"))
 
@@ -186,6 +187,7 @@
     ((equal *choice* "8") (log-check))
     ((equal *choice* "9") (install-docker))
     ((equal *choice* "10") (restart-all))
+    ((equal *choice* "11") (install-twenty))
     ((equal *choice* "99") (help))
     ((equal *choice* "999") (sb-ext:exit))
     (t (format t "~%Invalid option."))))
