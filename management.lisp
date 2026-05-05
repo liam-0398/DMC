@@ -20,7 +20,7 @@
   (format t "~%7 - Backup Twenty - BROKEN")
   (format t "~%8 - Logs")
   (format t "~%9 - Install Docker")
-  (format t "~%9 - Restart All Containers")
+  (format t "~%10 - Restart All Containers")
   (format t "~%99 - Help")
   (format t "~%999 - Exit"))
 
@@ -168,7 +168,7 @@
     (list "sh" "-c" "sudo docker restart $(sudo docker ps -q)")
     :output t
     :error-output t))
-    
+
 (defun switchboard ()
   (format t "~%Enter 0 to install containers or 99 for help.")
   (format t "~%>> ")
