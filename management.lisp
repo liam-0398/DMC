@@ -22,6 +22,7 @@
   (format t "~%9 - Install Docker")
   (format t "~%10 - Restart All Containers")
   (format t "~%11 - Install Twenty (WITHOUT AP)")
+  (format t "~%12 - Install HTTPS Support")
   (format t "~%99 - Help")
   (format t "~%999 - Exit"))
 
@@ -96,8 +97,8 @@
   (format t "NOT IMPLEMENTED"))
 
 (defun restart-activepieces ()
-  (uiop:run-program (list "sudo" "docker" "stop" "activepieces-app") :output t)
-  (uiop:run-program (list "sudo" "docker" "start" "activepieces-app") :output t)
+  (uiop:run-program (list "sudo" "docker" "stop" "activepieces") :output t)
+  (uiop:run-program (list "sudo" "docker" "start" "activepieces") :output t)
   (format t "~%RESTARTED"))
 
 (defun restart-twenty ()
@@ -106,10 +107,13 @@
   (format t "~%RESTARTED"))
 
 (defun install-activepieces ()
-  (uiop:run-program
-    (list "bash" "-c"
-          "sudo docker rm -f activepieces 2>/dev/null; sudo docker run -d -p 8080:80 -v /root/.activepieces:/root/.activepieces --name activepieces -e AP_REDIS_TYPE=MEMORY -e AP_DB_TYPE=PGLITE -e AP_FRONTEND_URL=http://localhost:8080 activepieces/activepieces:latest")
-    :output t))
+  (format t "Enter Activepieces public URL (eg https://admin.sudlesystems.com): ")
+  (finish-output)
+  (let ((url (read-line)))
+    (uiop:run-program
+      (list "bash" "-c"
+            (format nil "sudo docker rm -f activepieces 2>/dev/null; sudo docker run -d -p 8080:80 -v /root/.activepieces:/root/.activepieces --name activepieces -e AP_REDIS_TYPE=MEMORY -e AP_DB_TYPE=PGLITE -e AP_FRONTEND_URL=~a activepieces/activepieces:latest" url))
+      :output t)))
 
 (defun install-twenty ()
   (ensure-directories-exist (merge-pathnames "twenty/" (user-homedir-pathname)))
@@ -124,8 +128,8 @@
   
 
 (defun update-activepieces ()
-  (uiop:run-program (list "sudo" "docker" "stop" "activepieces-app") :output t)
-  (uiop:run-program (list "sudo" "docker" "rm" "activepieces-app") :output t)
+  (uiop:run-program (list "sudo" "docker" "stop" "activepieces") :output t)
+  (uiop:run-program (list "sudo" "docker" "rm" "activepieces") :output t)
   (uiop:run-program (list "sudo" "docker" "pull" "activepieces/activepieces:latest") :output t)
   (install-activepieces)
   (format t "~%COMPLETED. Check output above."))
@@ -169,6 +173,16 @@
     (list "sh" "-c" "sudo docker restart $(sudo docker ps -q)")
     :output t
     :error-output t))
+    
+(defun install-https-support ()
+  (format t "~%~a" (uiop:run-program
+    (list "sudo" "apt" "install" "nginx" "python3-certbot-nginx")
+    :output :string))
+    (format t "~% ADJUST CONFIG FILES AND START")
+    (format t "~%~%~a" "sudo ln -s /etc/nginx/sites-available/*DOMAIN* /etc/nginx/sites-enabled/")
+(format t "~%~a" "sudo nginx -t")
+(format t "~%~a" "sudo systemctl reload nginx")
+(format t "~%~a" "sudo certbot --nginx -d *SUBDOMAIN1*"))
 
 (defun switchboard ()
   (format t "~%Enter 0 to install containers or 99 for help.")
@@ -188,6 +202,7 @@
     ((equal *choice* "9") (install-docker))
     ((equal *choice* "10") (restart-all))
     ((equal *choice* "11") (install-twenty))
+    ((equal *choice* "12") (install-https-support))
     ((equal *choice* "99") (help))
     ((equal *choice* "999") (sb-ext:exit))
     (t (format t "~%Invalid option."))))
