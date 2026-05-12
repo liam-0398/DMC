@@ -4,6 +4,8 @@ Requires quicklisp.
 
 Run using 
 
+```
 sbcl --script management.lisp
+```
 
 To compile see instructions in source.
