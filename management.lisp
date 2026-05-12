@@ -26,17 +26,36 @@
   (format t "~%13 - Checklist")
   (format t "~%14 - Install SudleCRM")
   (format t "~%15 - Pull Quicklisp")
+  (format t "~%16 - Add Swap")
   (format t "~%99 - Help")
   (format t "~%999 - Exit"))
 
 (defun checklist ()
-  (format t "~%Add swap")
+  (format t "~%Add Swap")
   (format t "~%Setup Nginx")
-  (format t "~%Install containers")
-  (format t "~%3 - Restart Twenty"))
+  (format t "~%Install Quicklisp")
+  (format t "~%Install SudleCRM")
+  (format t "~%Install HTTPS Support"))
+
+(defun add-swapfile (&optional (size-gb 4))
+  (handler-case
+      (uiop:run-program "swapon --show | grep -q /swapfile"
+                        :output nil :error-output nil)
+    (error ()
+      (format t "~&Creating ~AGB swapfile...~%" size-gb)
+      (uiop:run-program (format nil "sudo fallocate -l ~AG /swapfile" size-gb)
+                        :output t :error-output t)
+      (uiop:run-program "sudo chmod 600 /swapfile"
+                        :output t :error-output t)
+      (uiop:run-program "sudo mkswap /swapfile"
+                        :output t :error-output t)
+      (uiop:run-program "sudo swapon /swapfile"
+                        :output t :error-output t)
+      (uiop:run-program "echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab"
+                        :output t :error-output t)
+      (format t "~&Swapfile created and enabled.~%"))))
 
 (defun twenty-env ()
-
   (uiop:run-program
       (list "curl" "-o" ".env"
             "https://raw.githubusercontent.com/twentyhq/twenty/refs/heads/main/packages/twenty-docker/.env.example") :output t)
@@ -134,6 +153,10 @@
   (uiop:run-program "cd LCRM/frontend && npm install"
                     :output t :error-output t)
   (uiop:run-program "cd LCRM/frontend && npm run build"
+                    :output t :error-output t)
+  (uiop:run-program "cd LCRM && sbcl --load crm.lisp"
+                    :output t :error-output t)
+  (uiop:run-program "cd LCRM && bash service_install.sh"
                     :output t :error-output t))
 
 (defun install-twenty ()
@@ -147,7 +170,13 @@
     (uiop:run-program (list "sudo" "docker" "compose" "up" "-d") :output t))
   (format t "~%TWENTY INSTALLED"))
 
-  (defun install-quicklisp ()
+ (defun install-quicklisp ()
+  (handler-case
+      (uiop:run-program "which sbcl" :output nil :error-output nil)
+    (error ()
+      (format t "~&SBCL not found, installing...~%")
+      (uiop:run-program "sudo apt update" :output t :error-output t)
+      (uiop:run-program "sudo apt install -y sbcl" :output t :error-output t)))
   (uiop:run-program "curl -O https://beta.quicklisp.org/quicklisp.lisp"
                     :output t :error-output t)
   (uiop:run-program
@@ -194,6 +223,12 @@
     :output :string))
   (format t "~%~a" (uiop:run-program
     (list "sudo" "docker" "logs" "--tail" "10" "twenty-server-1")
+    :output :string))
+  (format t "~%--- sudlecrm-backend ---~%~a" (uiop:run-program
+    (list "sudo" "journalctl" "-u" "sudlecrm-backend" "-n" "10" "--no-pager")
+    :output :string))
+  (format t "~%--- sudlecrm-frontend ---~%~a" (uiop:run-program
+    (list "sudo" "journalctl" "-u" "sudlecrm-frontend" "-n" "10" "--no-pager")
     :output :string)))
 
 (defun restart-all ()
@@ -234,6 +269,7 @@
     ((equal *choice* "13") (checklist))
     ((equal *choice* "14") (install-sudle))
     ((equal *choice* "15") (install-quicklisp))
+    ((equal *choice* "15") (add-swapfile))
     ((equal *choice* "99") (help))
     ((equal *choice* "999") (sb-ext:exit))
     (t (format t "~%Invalid option."))))
