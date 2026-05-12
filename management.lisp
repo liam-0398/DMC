@@ -23,8 +23,17 @@
   (format t "~%10 - Restart All Containers")
   (format t "~%11 - Install Twenty (WITHOUT AP)")
   (format t "~%12 - Install HTTPS Support")
+  (format t "~%13 - Checklist")
+  (format t "~%14 - Install SudleCRM")
+  (format t "~%15 - Pull Quicklisp")
   (format t "~%99 - Help")
   (format t "~%999 - Exit"))
+
+(defun checklist ()
+  (format t "~%Add swap")
+  (format t "~%Setup Nginx")
+  (format t "~%Install containers")
+  (format t "~%3 - Restart Twenty"))
 
 (defun twenty-env ()
 
@@ -115,6 +124,18 @@
             (format nil "sudo docker rm -f activepieces 2>/dev/null; sudo docker run -d -p 8080:80 -v /root/.activepieces:/root/.activepieces --name activepieces -e AP_REDIS_TYPE=MEMORY -e AP_DB_TYPE=PGLITE -e AP_FRONTEND_URL=~a activepieces/activepieces:latest" url))
       :output t)))
 
+(defun install-sudle ()
+  (uiop:run-program "curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -"
+                    :output t :error-output t)
+  (uiop:run-program "sudo apt install -y nodejs git"
+                    :output t :error-output t)
+  (uiop:run-program "git clone git@github.com:liam-0398/LCRM.git"
+                    :output t :error-output t)
+  (uiop:run-program "cd LCRM/frontend && npm install"
+                    :output t :error-output t)
+  (uiop:run-program "cd LCRM/frontend && npm run build"
+                    :output t :error-output t))
+
 (defun install-twenty ()
   (ensure-directories-exist (merge-pathnames "twenty/" (user-homedir-pathname)))
   (uiop:with-current-directory ((merge-pathnames "twenty/" (user-homedir-pathname)))
@@ -125,7 +146,13 @@
       :output t)
     (uiop:run-program (list "sudo" "docker" "compose" "up" "-d") :output t))
   (format t "~%TWENTY INSTALLED"))
-  
+
+  (defun install-quicklisp ()
+  (uiop:run-program "curl -O https://beta.quicklisp.org/quicklisp.lisp"
+                    :output t :error-output t)
+  (uiop:run-program
+    "sbcl --non-interactive --load quicklisp.lisp --eval '(quicklisp-quickstart:install)' --eval '(ql:add-to-init-file)'"
+    :output t :error-output t))
 
 (defun update-activepieces ()
   (uiop:run-program (list "sudo" "docker" "stop" "activepieces") :output t)
@@ -147,6 +174,7 @@
     :output t
     :error t)
   (format t "~%DOCKER INSTALLED"))
+
 
 (defun init-docker ()
   (format t "~%INITIALIZING DOCKER CONTAINERS")
@@ -203,6 +231,9 @@
     ((equal *choice* "10") (restart-all))
     ((equal *choice* "11") (install-twenty))
     ((equal *choice* "12") (install-https-support))
+    ((equal *choice* "13") (checklist))
+    ((equal *choice* "14") (install-sudle))
+    ((equal *choice* "15") (install-quicklisp))
     ((equal *choice* "99") (help))
     ((equal *choice* "999") (sb-ext:exit))
     (t (format t "~%Invalid option."))))
